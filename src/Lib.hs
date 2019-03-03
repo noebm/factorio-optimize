@@ -7,20 +7,11 @@ import Prelude hiding (product)
 import Data.Foldable hiding (product)
 import Data.Traversable
 import Control.Arrow (first, second)
-import Data.Ratio
 import Data.Either -- (rights)
 import Data.Maybe (maybeToList)
-import Data.Function (on)
 import Data.Map (Map , fromList)
 
-lcmRatio :: Integral a => Ratio a -> Ratio a -> Ratio a
-lcmRatio x y = (lcm `on` numerator) x y % (gcd `on` denominator) x y
-
-gcdRatio :: Integral a => Ratio a -> Ratio a -> Ratio a
-gcdRatio x y = (gcd `on` numerator) x y % (lcm `on` denominator) x y
-
-ratioToIntegral :: Integral a => Ratio a -> a
-ratioToIntegral x = numerator x * denominator x
+import Ratio
 
 someFunc :: IO ()
 someFunc = putStrLn "someFunc"
