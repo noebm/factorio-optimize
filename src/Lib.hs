@@ -64,6 +64,8 @@ yellowBelt = Item "Transport belt"
 inserter = Item "Inserter"
 greenCircuit = Item "Electronic Circuit"
 
+copperCable = Item "Copper cable"
+
 redScience = Item "Automation science pack"
 greenScience = Item "Logistic science pack"
 
@@ -83,6 +85,20 @@ redScienceBuilding = Building
   , product = redScience
   , productCount = 1
   , craftingTime = 5
+  }
+
+copperCableBuilding = Building
+  { ingredients = [(1 , copperPlate)]
+  , product = copperCable
+  , productCount = 2
+  , craftingTime = 0.5
+  }
+
+greenCircuitBuilding = Building
+  { ingredients = [ (3 , copperCable) , (1, ironPlate)]
+  , product = greenCircuit
+  , productCount = 1
+  , craftingTime = 0.5
   }
 
 {-
