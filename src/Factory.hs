@@ -5,6 +5,7 @@ import Prelude hiding (product)
 import Data.Foldable (toList, find)
 import Control.Arrow (first, second)
 import Data.Either -- (rights)
+import Data.List (intercalate)
 import Data.Maybe (maybeToList)
 import Data.Map (Map , fromList)
 import qualified Data.Map as Map
@@ -61,9 +62,6 @@ simplFactoryShow f = unlines (aux f) where
 
   aux :: Factory -> [ String ]
   aux f =
-    case toList (inputs f) of
-      [] -> []
-      xs -> "Subfactories" :
-        [ unlines $ (replicate 2 ' ' ++) <$> aux (scaleFactory scale f) | (f , scale) <- xs ]
+    [ intercalate "\n" $ (replicate 2 ' ' ++) <$> aux (scaleFactory scale f) | (f , scale) <- toList (inputs f) ]
     ++
     [ name (product (worker f)) ++ " x " ++ show (workerCount f)]
