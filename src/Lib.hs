@@ -101,6 +101,28 @@ greenCircuitBuilding = Building
   , craftingTime = 0.5
   }
 
+inserterBuilding = Building
+  { ingredients = [ (1, greenCircuit), (1, gear), (1, ironPlate) ]
+  , product = inserter
+  , productCount = 1
+  , craftingTime = 0.5
+  }
+
+yellowBeltBuilding = Building
+  { ingredients = [ (1, ironPlate) , (1 , gear)]
+  , product = yellowBelt
+  , productCount = 2
+  , craftingTime = 0.5
+  }
+
+greenScienceBuilding = Building
+  { ingredients = [ (1, inserter), (1, yellowBelt)]
+  , product = greenScience
+  , productCount = 1
+  , craftingTime = 6
+  }
+
+
 {-
   find a building that produces the item
 -}
