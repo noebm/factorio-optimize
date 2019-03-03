@@ -119,6 +119,9 @@ factoryOutputPerSecond f = productsPerSecond (worker f) * fromIntegral (workerCo
 factoryProduct :: Factory -> Item
 factoryProduct f = product (worker f)
 
+scaleFactory :: Word -> Factory -> Factory
+scaleFactory s f = f { workerCount = s * workerCount f , inputs = first (s *) <$> inputs f }
+
 -- scienceLaboratory :: 
 
 -- factoryScale :: Ratio Word -> Factory -> Ratio Word
@@ -161,7 +164,6 @@ simplFactoryShow f = unlines (aux f) where
     case (toList (inputs f)) of
       [] -> []
       xs -> "Subfactories" :
-        [ unlines $ (replicate 2 ' ' ++) <$> aux f | (scale , f) <- xs ]
-            -- [ concat $ (\(scale , f) -> (show scale ++ " -") : unlines (aux f)) <$> xs ]
+        [ unlines $ (replicate 2 ' ' ++) <$> aux (scaleFactory scale f) | (scale , f) <- xs ]
     ++
     [ "Building: " ++ name (product (worker f)) ++ " x " ++ show (workerCount f)]
