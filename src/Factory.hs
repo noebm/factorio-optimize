@@ -5,6 +5,7 @@ import Prelude hiding (product)
 import Data.Foldable (toList, find)
 import Control.Arrow (first, second)
 import Data.Either -- (rights)
+import Data.Maybe (maybeToList)
 import Data.Map (Map , fromList)
 import qualified Data.Map as Map
 
@@ -27,13 +28,11 @@ scaleFactory :: Word -> Factory -> Factory
 scaleFactory s f = f { workerCount = s * workerCount f , inputs = second (s *) <$> inputs f }
 
 requiredInputs :: Factory -> [ (Item, Ratio Word) ]
-requiredInputs f = undefined
-  where
-    subinputs :: Map Item (Ratio Word)
-    subinputs
-      = Map.unionsWith (+)
-      $ fmap (\(f' , mult) -> fromList $ second (fromIntegral mult *) <$> requiredInputs f')
-      $ toList (inputs f)
+requiredInputs f = Map.toList $ Map.unionsWith (+) $ fmap (fromList . return) $ do
+  (item , itemsPerSecond) <- ingredientsPerSecond (worker f)
+  case inputs f Map.!? item of
+    Just (f' , mult) -> second (fromIntegral mult *) <$> requiredInputs f'
+    Nothing -> return (item, itemsPerSecond * fromIntegral (workerCount f))
 
 solveChain :: Item -> [ Recipe ] -> Maybe Factory
 solveChain item context = do
