@@ -3,7 +3,6 @@ module Lib
 --    )
 where
 
-import qualified Prelude
 import Prelude hiding (product)
 import Data.Foldable hiding (product)
 import Data.Traversable
@@ -30,24 +29,24 @@ newtype Item = Item
   { name :: String }
   deriving (Eq, Ord, Show)
 
-data Building = Building
+data Recipe = Recipe
   { ingredients :: [ (Word , Item) ]
   , product :: Item
   , productCount :: Word
   , craftingTime :: Ratio Word
   } deriving (Eq, Show)
 
-ingredientsPerSecond :: Building -> [ (Ratio Word, Item) ]
+ingredientsPerSecond :: Recipe -> [ (Ratio Word, Item) ]
 ingredientsPerSecond b = first ((/ t) . fromIntegral) <$> ingredients b
   where t = craftingTime b
 
-ingredientPerSecond :: Building -> Item -> Maybe (Ratio Word)
+ingredientPerSecond :: Recipe -> Item -> Maybe (Ratio Word)
 ingredientPerSecond b i = fmap fst $ find ((== i) . snd) $ ingredientsPerSecond b
 
-ingredientsItems :: Building -> [ Item ]
+ingredientsItems :: Recipe -> [ Item ]
 ingredientsItems b = snd <$> ingredients b
 
-productsPerSecond :: Building -> Ratio Word
+productsPerSecond :: Recipe -> Ratio Word
 productsPerSecond b = fromIntegral (productCount b) / craftingTime b
 
 {-
@@ -70,52 +69,52 @@ redScience = Item "Automation science pack"
 greenScience = Item "Logistic science pack"
 
 {-
-Buildings
+Recipes
 -}
-gearBuilding :: Building
-gearBuilding = Building
+gearRecipe :: Recipe
+gearRecipe = Recipe
   { ingredients = [ (2 , ironPlate) ]
   , product = gear
   , productCount = 1
   , craftingTime = 0.5
   }
 
-redScienceBuilding = Building
+redScienceRecipe = Recipe
   { ingredients = [(1, copperPlate) , (1, gear)]
   , product = redScience
   , productCount = 1
   , craftingTime = 5
   }
 
-copperCableBuilding = Building
+copperCableRecipe = Recipe
   { ingredients = [(1 , copperPlate)]
   , product = copperCable
   , productCount = 2
   , craftingTime = 0.5
   }
 
-greenCircuitBuilding = Building
+greenCircuitRecipe = Recipe
   { ingredients = [ (3 , copperCable) , (1, ironPlate)]
   , product = greenCircuit
   , productCount = 1
   , craftingTime = 0.5
   }
 
-inserterBuilding = Building
+inserterRecipe = Recipe
   { ingredients = [ (1, greenCircuit), (1, gear), (1, ironPlate) ]
   , product = inserter
   , productCount = 1
   , craftingTime = 0.5
   }
 
-yellowBeltBuilding = Building
+yellowBeltRecipe = Recipe
   { ingredients = [ (1, ironPlate) , (1 , gear)]
   , product = yellowBelt
   , productCount = 2
   , craftingTime = 0.5
   }
 
-greenScienceBuilding = Building
+greenScienceRecipe = Recipe
   { ingredients = [ (1, inserter), (1, yellowBelt)]
   , product = greenScience
   , productCount = 1
@@ -126,12 +125,12 @@ greenScienceBuilding = Building
 {-
   find a building that produces the item
 -}
-findProduct :: Item -> [ Building ] -> Maybe Building
+findProduct :: Item -> [ Recipe ] -> Maybe Recipe
 findProduct item = find (\ building -> product building == item)
 
 data Factory = Factory
   { inputs :: Map Item (Word , Factory) -- scaled factory
-  , worker :: Building
+  , worker :: Recipe
   , workerCount :: Word -- output scale to make factory integral
   } deriving (Show)
 
@@ -144,18 +143,9 @@ factoryProduct f = product (worker f)
 scaleFactory :: Word -> Factory -> Factory
 scaleFactory s f = f { workerCount = s * workerCount f , inputs = first (s *) <$> inputs f }
 
--- scienceLaboratory :: 
-
--- factoryScale :: Ratio Word -> Factory -> Ratio Word
--- factoryScale requiredPerSecond f = factoryOutputPerSecond f / requiredPerSecond
-
--- undistributeLeft :: Either (a , b) (a , c) -> (a , Either b c)
--- undistributeLeft (Left (x , y)) = (x , Left y)
--- undistributeLeft (Right (x , z)) = (x , Right z)
-
-solveChain :: Item -> [ Building ] -> Maybe Factory
+solveChain :: Item -> [ Recipe ] -> Maybe Factory
 solveChain item context = do
-  outputBuilding <- findProduct item context
+  outputRecipe <- findProduct item context
 
   -- XXX find shared subtrees
 
@@ -163,18 +153,15 @@ solveChain item context = do
         = fmap (\ (ips , Right f) -> ((lcmRatio ips (factoryOutputPerSecond f), ips), f))
         . filter (isRight . snd)
         . fmap (second (\ item' -> maybe (Left item') Right $ solveChain item' context))
-        $ ingredientsPerSecond outputBuilding
-  let factor = Prelude.product $ (\((xps, ips) , f) -> xps / ips) <$> factors
-        -- foldl lcmRatio 1 $ fmap factoryOutputPerSecond subfactories
-
-  -- Nothing
+        $ ingredientsPerSecond outputRecipe
+  let factor = foldl lcmRatio 1 $ (\((xps, ips) , f) -> xps / ips) <$> factors
   return $ Factory
     { inputs = fromList $ do
         ((_ , ips), f) <- factors
         let ops = factoryOutputPerSecond f
         let product = factoryProduct f
         return $ (,) product $ (ratioToIntegral (ips / ops * factor) , f)
-    , worker = outputBuilding
+    , worker = outputRecipe
     , workerCount = ratioToIntegral factor
     }
 
@@ -188,4 +175,4 @@ simplFactoryShow f = unlines (aux f) where
       xs -> "Subfactories" :
         [ unlines $ (replicate 2 ' ' ++) <$> aux (scaleFactory scale f) | (scale , f) <- xs ]
     ++
-    [ "Building: " ++ name (product (worker f)) ++ " x " ++ show (workerCount f)]
+    [ name (product (worker f)) ++ " x " ++ show (workerCount f)]
