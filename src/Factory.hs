@@ -35,24 +35,26 @@ requiredInputs f = Map.toList $ Map.unionsWith (+) $ fmap (fromList . return) $ 
     Just (f' , mult) -> second (fromIntegral mult *) <$> requiredInputs f'
     Nothing -> return (item, itemsPerSecond * fromIntegral (workerCount f))
 
+{-
+  finds the optimal ratio producing the item
+  given a list of recipes
+-}
+-- XXX find shared subtrees
 solveChain :: Item -> [ Recipe ] -> Maybe Factory
 solveChain item context = do
   outputRecipe <- findProduct item context
 
-  -- XXX find shared subtrees
-
-  let factors
-        = fmap (\ (Right f, ips) -> ((lcmRatio ips (factoryOutputPerSecond f), ips), f))
+  let (factor , factors)
+        = first (foldl lcmRatio 1) . unzip
+        . fmap (\ (Right f, ips) -> (lcmRatio ips (factoryOutputPerSecond f) / ips, (ips , f)))
         . filter (isRight . fst)
         . fmap (first (\ item' -> maybe (Left item') Right $ solveChain item' context))
         $ ingredientsPerSecond outputRecipe
-  let factor = foldl lcmRatio 1 $ (\((xps, ips) , _) -> xps / ips) <$> factors
   return $ Factory
     { inputs = fromList $ do
-        ((_ , ips), f) <- factors
+        (ips, f) <- factors
         let ops = factoryOutputPerSecond f
-        let product = factoryProduct f
-        return $ (,) product (f , ratioToIntegral (ips / ops * factor))
+        return $ (,) (factoryProduct f) (f , ratioToIntegral (ips / ops * factor))
     , worker = outputRecipe
     , workerCount = ratioToIntegral factor
     }
