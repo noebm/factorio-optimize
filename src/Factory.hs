@@ -59,9 +59,9 @@ solveChain item context = do
 
 simplFactoryShow :: Factory -> String
 simplFactoryShow f = unlines (aux f) where
-
   aux :: Factory -> [ String ]
   aux f =
-    [ intercalate "\n" $ (replicate 2 ' ' ++) <$> aux (scaleFactory scale f) | (f , scale) <- toList (inputs f) ]
+    [ intercalate "\n" $ (replicate 2 ' ' ++) <$> aux (scaleFactory scale f)
+    | (f , scale) <- toList (inputs f) ]
     ++
     [ name (product (worker f)) ++ " x " ++ show (workerCount f)]
