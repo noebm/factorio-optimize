@@ -1,6 +1,3 @@
-[submodule "language-lua"]
-	path = language-lua
-	url = ../language-lua/
 [submodule "factorio-data"]
 	path = factorio-data
 	url = https://github.com/wube/factorio-data
