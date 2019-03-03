@@ -69,3 +69,37 @@ greenScienceRecipe = Recipe
   , productCount = 1
   , craftingTime = 6
   }
+
+{-
+  power
+-}
+-- XXX fluid behaviour and craftingTime not correct!
+
+water = Item "Water"
+
+offshorePump = Recipe
+  { ingredients = []
+  , product = water
+  , productCount = 1200
+  , craftingTime = 1
+  }
+
+-- 165 degrees
+boilerSteam = Item "Steam"
+
+boiler = Recipe
+  { ingredients = [ (water, 60) ]
+  , product = boilerSteam
+  , productCount = 60
+  , craftingTime = 1
+  }
+
+electricEnergy = Item "Electric Energy"
+
+steamEngine = Recipe
+  { ingredients = [ (boilerSteam, 30) ]
+  , product = electricEnergy
+  , productCount = 900
+  , craftingTime = 1
+  }
+
