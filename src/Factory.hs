@@ -2,16 +2,17 @@ module Factory
 where
 
 import Prelude hiding (product)
-import Data.Map (Map , fromList)
-import Data.Foldable (toList)
+import Data.Foldable (toList, find)
 import Control.Arrow (first, second)
 import Data.Either -- (rights)
+import Data.Map (Map , fromList)
+import qualified Data.Map as Map
 
 import Ratio
 import Recipe
 
 data Factory = Factory
-  { inputs :: Map Item (Word , Factory) -- scaled factory
+  { inputs :: Map Item (Factory , Word) -- scaled factory
   , worker :: Recipe
   , workerCount :: Word -- output scale to make factory integral
   } deriving (Show)
@@ -23,7 +24,16 @@ factoryProduct :: Factory -> Item
 factoryProduct f = product (worker f)
 
 scaleFactory :: Word -> Factory -> Factory
-scaleFactory s f = f { workerCount = s * workerCount f , inputs = first (s *) <$> inputs f }
+scaleFactory s f = f { workerCount = s * workerCount f , inputs = second (s *) <$> inputs f }
+
+requiredInputs :: Factory -> [ (Item, Ratio Word) ]
+requiredInputs f = undefined
+  where
+    subinputs :: Map Item (Ratio Word)
+    subinputs
+      = Map.unionsWith (+)
+      $ fmap (\(f' , mult) -> fromList $ second (fromIntegral mult *) <$> requiredInputs f')
+      $ toList (inputs f)
 
 solveChain :: Item -> [ Recipe ] -> Maybe Factory
 solveChain item context = do
@@ -32,9 +42,9 @@ solveChain item context = do
   -- XXX find shared subtrees
 
   let factors
-        = fmap (\ (ips , Right f) -> ((lcmRatio ips (factoryOutputPerSecond f), ips), f))
-        . filter (isRight . snd)
-        . fmap (second (\ item' -> maybe (Left item') Right $ solveChain item' context))
+        = fmap (\ (Right f, ips) -> ((lcmRatio ips (factoryOutputPerSecond f), ips), f))
+        . filter (isRight . fst)
+        . fmap (first (\ item' -> maybe (Left item') Right $ solveChain item' context))
         $ ingredientsPerSecond outputRecipe
   let factor = foldl lcmRatio 1 $ (\((xps, ips) , _) -> xps / ips) <$> factors
   return $ Factory
@@ -42,7 +52,7 @@ solveChain item context = do
         ((_ , ips), f) <- factors
         let ops = factoryOutputPerSecond f
         let product = factoryProduct f
-        return $ (,) product (ratioToIntegral (ips / ops * factor) , f)
+        return $ (,) product (f , ratioToIntegral (ips / ops * factor))
     , worker = outputRecipe
     , workerCount = ratioToIntegral factor
     }
@@ -55,6 +65,6 @@ simplFactoryShow f = unlines (aux f) where
     case toList (inputs f) of
       [] -> []
       xs -> "Subfactories" :
-        [ unlines $ (replicate 2 ' ' ++) <$> aux (scaleFactory scale f) | (scale , f) <- xs ]
+        [ unlines $ (replicate 2 ' ' ++) <$> aux (scaleFactory scale f) | (f , scale) <- xs ]
     ++
     [ name (product (worker f)) ++ " x " ++ show (workerCount f)]
