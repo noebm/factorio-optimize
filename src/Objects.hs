@@ -9,6 +9,7 @@ copperPlate = Item "Copper Plate"
 gear = Item "Iron gear wheel"
 
 yellowBelt = Item "Transport belt"
+redBelt = Item "Fast transport belt"
 inserter = Item "Inserter"
 greenCircuit = Item "Electronic Circuit"
 
@@ -60,6 +61,13 @@ yellowBeltRecipe = Recipe
   { ingredients = [ (ironPlate, 1) , (gear, 1)]
   , product = yellowBelt
   , productCount = 2
+  , craftingTime = 0.5
+  }
+
+redBeltRecipe = Recipe
+  { ingredients = [ (gear, 5), (yellowBelt, 1) ]
+  , product = redBelt
+  , productCount = 1
   , craftingTime = 0.5
   }
 
