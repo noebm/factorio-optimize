@@ -30,7 +30,7 @@ scaleFactory s f = f { workerCount = s * workerCount f , inputs = second (s *) <
 
 instance HasThroughput Factory where
   outputPerSecond f = scaleThroughput (fromIntegral (workerCount f)) <$> outputPerSecond (worker f)
-  inputPerSecond f = toThroughputList . collectThroughput $ do
+  inputPerSecond f = collectThroughput $ do
     t <- inputPerSecond (worker f)
     case inputs f Map.!? item t of
       Just (f' , mult) -> scaleThroughput (fromIntegral mult) <$> inputPerSecond f'
@@ -40,7 +40,7 @@ instance HasThroughput Factory where
   bandwidth requirement for internal items
 -}
 internalThroughputPerSecond :: Factory -> [ Throughput Word Second ]
-internalThroughputPerSecond f = toThroughputList . collectThroughput $ do
+internalThroughputPerSecond f = collectThroughput $ do
   (f' , k) <- toList $ inputs f
   scaleThroughput (fromIntegral k) <$> outputPerSecond' f' : internalThroughputPerSecond f'
 
@@ -49,24 +49,24 @@ internalThroughputPerSecond f = toThroughputList . collectThroughput $ do
   given a list of recipes
 -}
 -- XXX find shared subtrees
-solveChain :: Item -> [ Recipe ] -> Maybe Factory
-solveChain it context = do
+optimalFactory :: Item -> [ Recipe ] -> Maybe Factory
+optimalFactory it context = do
   outputRecipe <- findProduct it context
-  let factors = do
+  let optimizedInputs = do
          t <- inputPerSecond outputRecipe
-         f <- maybeToList $ solveChain (item t) context
+         f <- maybeToList $ optimalFactory (item t) context
          return (f , throughput t)
-  let factor
+  let inputAdjustment
         = foldl lcmRatio 1
         . fmap (\(f , ips) -> lcmRatio ips (throughput $ outputPerSecond' f) / ips)
-        $ factors
+        $ optimizedInputs
   return $ Factory
     { inputs = fromList $ do
-        (f , ips) <- factors
+        (f , ips) <- optimizedInputs
         let ops = throughput $ outputPerSecond' f
-        return $ (,) (factoryProduct f) (f , ratioToIntegral (ips / ops * factor))
+        return $ (,) (factoryProduct f) (f , ratioToIntegral (ips / ops * inputAdjustment))
     , worker = outputRecipe
-    , workerCount = ratioToIntegral factor
+    , workerCount = ratioToIntegral inputAdjustment
     }
 
 simplFactoryShow :: Factory -> String

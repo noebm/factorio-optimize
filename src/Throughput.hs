@@ -52,10 +52,13 @@ findOutputPerSecond b i = fmap throughput $ find ((== i) . item) $ outputPerSeco
 outputPerSecond' :: HasThroughput x => x -> Throughput Word Second
 outputPerSecond' = NE.head . outputPerSecond
 
-collectThroughput :: Integral a => [ Throughput a t ] -> Map.Map Item (Ratio a)
-collectThroughput = Map.fromListWith (+) . fmap aux
+throughputMap ::Integral a => [ Throughput a t ] -> Map.Map Item (Ratio a)
+throughputMap = Map.fromListWith (+) . fmap aux
   where aux (Throughput i k) = (i , k)
 
 toThroughputList :: Map.Map Item (Ratio a) -> [ Throughput a t ]
 toThroughputList = fmap (uncurry Throughput) . Map.toList
+
+collectThroughput :: Integral a => [ Throughput a t ] -> [ Throughput a t ]
+collectThroughput = toThroughputList . throughputMap
 
