@@ -1,6 +1,5 @@
 module Ratio
-  ( module Data.Ratio
-  , lcmRatio
+  ( lcmRatio
   , gcdRatio
   , ratioToIntegral
   )
