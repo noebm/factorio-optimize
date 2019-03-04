@@ -12,6 +12,8 @@ import qualified Data.Map as Map
 import Data.Ratio
 
 import Ratio
+import Item
+import Throughput
 import Recipe
 
 data Factory = Factory
@@ -20,34 +22,27 @@ data Factory = Factory
   , workerCount :: Word -- output scale to make factory integral
   } deriving (Show)
 
-factoryOutputPerSecond :: Factory -> Ratio Word
-factoryOutputPerSecond f = productsPerSecond (worker f) * fromIntegral (workerCount f)
-
 factoryProduct :: Factory -> Item
 factoryProduct f = product (worker f)
 
 scaleFactory :: Word -> Factory -> Factory
 scaleFactory s f = f { workerCount = s * workerCount f , inputs = second (s *) <$> inputs f }
 
-{-
-  bandwidth requirement for external items
--}
-requiredInputs :: Factory -> [ (Item, Ratio Word) ]
-requiredInputs f = Map.toList $ Map.unionsWith (+) $ fmap (fromList . return) $ do
-  (item , itemsPerSecond) <- ingredientsPerSecond (worker f)
-  case inputs f Map.!? item of
-    Just (f' , mult) -> second (fromIntegral mult *) <$> requiredInputs f'
-    Nothing -> return (item, itemsPerSecond * fromIntegral (workerCount f))
+instance HasThroughput Factory where
+  outputPerSecond f = scaleThroughput (fromIntegral (workerCount f)) <$> outputPerSecond (worker f)
+  inputPerSecond f = toThroughputList . collectThroughput $ do
+    t <- inputPerSecond (worker f)
+    case inputs f Map.!? item t of
+      Just (f' , mult) -> scaleThroughput (fromIntegral mult) <$> inputPerSecond f'
+      Nothing -> return $ scaleThroughput (fromIntegral (workerCount f)) t
 
 {-
-  bandwidth requirement including intermediate steps
+  bandwidth requirement for internal items
 -}
-requiredThroughput :: Factory -> [ (Item, Ratio Word) ]
-requiredThroughput f = Map.toList $ Map.unionsWith (+) $ fmap (fromList . return) $ do
-  x <- ingredientsPerSecond (worker f)
-  (:) (second (fromIntegral (workerCount f) *) x) $ do
-    (f', mult) <- maybeToList . (inputs f Map.!?) $ fst x
-    second (fromIntegral mult *) <$> requiredThroughput f'
+internalThroughputPerSecond :: Factory -> [ Throughput Word Second ]
+internalThroughputPerSecond f = toThroughputList . collectThroughput $ do
+  (f' , k) <- toList $ inputs f
+  scaleThroughput (fromIntegral k) <$> outputPerSecond' f' : internalThroughputPerSecond f'
 
 {-
   finds the optimal ratio producing the item
@@ -55,20 +50,20 @@ requiredThroughput f = Map.toList $ Map.unionsWith (+) $ fmap (fromList . return
 -}
 -- XXX find shared subtrees
 solveChain :: Item -> [ Recipe ] -> Maybe Factory
-solveChain item context = do
-  outputRecipe <- findProduct item context
+solveChain it context = do
+  outputRecipe <- findProduct it context
   let factors = do
-         (item' , ips) <- ingredientsPerSecond outputRecipe
-         f <- maybeToList $ solveChain item' context
-         return (f , ips)
+         t <- inputPerSecond outputRecipe
+         f <- maybeToList $ solveChain (item t) context
+         return (f , throughput t)
   let factor
         = foldl lcmRatio 1
-        . fmap (\(f , ips) -> lcmRatio ips (factoryOutputPerSecond f) / ips)
+        . fmap (\(f , ips) -> lcmRatio ips (throughput $ outputPerSecond' f) / ips)
         $ factors
   return $ Factory
     { inputs = fromList $ do
         (f , ips) <- factors
-        let ops = factoryOutputPerSecond f
+        let ops = throughput $ outputPerSecond' f
         return $ (,) (factoryProduct f) (f , ratioToIntegral (ips / ops * factor))
     , worker = outputRecipe
     , workerCount = ratioToIntegral factor

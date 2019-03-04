@@ -2,6 +2,7 @@ module Objects
 where
 
 import Prelude hiding (product)
+import Item
 import Recipe
 
 ironPlate = Item "Iron Plate"
