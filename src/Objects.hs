@@ -13,6 +13,8 @@ yellowBelt = Item "Transport belt"
 redBelt = Item "Fast transport belt"
 inserter = Item "Inserter"
 greenCircuit = Item "Electronic Circuit"
+redCircuit = Item "Advanced Circuit"
+plastic = Item "Plastic Bar"
 
 copperCable = Item "Copper cable"
 
@@ -49,6 +51,20 @@ greenCircuitRecipe = Recipe
   , product = greenCircuit
   , productCount = 1
   , craftingTime = 0.5
+  }
+
+plasticRecipe = Recipe
+  { ingredients = [] -- XXX
+  , product = plastic
+  , productCount = 2
+  , craftingTime = 1
+  }
+
+redCircuitRecipe = Recipe
+  { ingredients = [ (plastic, 2), (copperCable, 4), (greenCircuit, 2) ]
+  , product = redCircuit
+  , productCount = 1
+  , craftingTime = 6
   }
 
 inserterRecipe = Recipe

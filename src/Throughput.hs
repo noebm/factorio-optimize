@@ -10,6 +10,7 @@ import qualified Data.Map as Map
 
 import Item
 
+data Tick
 data Second
 data Minute
 data Hour
@@ -17,6 +18,9 @@ data Day
 
 class Time t where
   timeInSeconds :: Integral a => Proxy t -> Ratio a
+
+instance Time Tick where
+  timeInSeconds _ = 1 % 60
 
 instance Time Second where
   timeInSeconds _ = 1
@@ -31,6 +35,7 @@ instance Time Day where
   timeInSeconds _ = 60 * 60 * 24
 
 data Throughput a t = Throughput { item :: Item , throughput :: Ratio a }
+  deriving Show
 
 scaleThroughput :: Integral a => Ratio a -> Throughput a t -> Throughput a t
 scaleThroughput r t = t { throughput = r * throughput t }
