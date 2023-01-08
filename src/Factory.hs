@@ -8,6 +8,7 @@ import Data.List (intercalate)
 import Data.Maybe (maybeToList)
 import Data.Map (Map , fromList)
 import qualified Data.Map as Map
+import qualified Data.List.NonEmpty as NonEmpty
 
 import Data.Ratio
 
@@ -55,7 +56,7 @@ optimalFactory it context = do
          return (f , throughput t)
   let inputAdjustment
         = foldl lcmRatio 1
-        . fmap (\(f , ips) -> lcmRatio ips (throughput $ outputPerSecond' f) / ips)
+        . fmap (\(f , ips) -> lcmRatio ips (throughput $ NonEmpty.head $ outputPerSecond f) / ips)
         $ optimizedInputs
   return $ Factory
     { inputs = fromList $ do

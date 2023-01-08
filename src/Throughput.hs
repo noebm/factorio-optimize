@@ -4,8 +4,8 @@ module Throughput where
 import Data.Ratio
 import Data.Proxy
 import Data.List.NonEmpty (NonEmpty)
-import qualified Data.List.NonEmpty as NE
 import Data.Foldable
+import Data.Map (Map)
 import qualified Data.Map as Map
 
 import Item
@@ -53,9 +53,6 @@ findInputPerSecond b i = fmap throughput $ find ((== i) . item) $ inputPerSecond
 
 findOutputPerSecond :: HasThroughput x => x -> Item -> Maybe (Ratio Word)
 findOutputPerSecond b i = fmap throughput $ find ((== i) . item) $ outputPerSecond b
-
-outputPerSecond' :: HasThroughput x => x -> Throughput Word Second
-outputPerSecond' = NE.head . outputPerSecond
 
 throughputMap ::Integral a => [ Throughput a t ] -> Map.Map Item (Ratio a)
 throughputMap = Map.fromListWith (+) . fmap aux
