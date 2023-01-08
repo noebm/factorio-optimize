@@ -4,22 +4,14 @@ module Lua where
 
 import HsLua
 
-import Prelude hiding (product)
 import Control.Monad
 import Control.Applicative
-import Data.Monoid
-import Text.Printf
-import Data.Foldable hiding (product)
-import Data.Bifunctor
-import Data.Bitraversable
-import Data.Maybe
-
+import Data.Foldable
+import Data.Ratio
 import Data.Map (Map)
 import qualified Data.Map as Map
-
 import qualified Data.List.NonEmpty as NonEmpty
 
-import Data.Ratio
 
 import Recipe
 import Item
@@ -27,7 +19,6 @@ import Item
 loadLibs :: LuaError e => [ FilePath ] -> LuaE e ()
 loadLibs paths = for_ paths $ \path -> do
   status <- loadfile path
-  liftIO $ printf "Loaded '%s': %s\n" path (show status)
   call 0 0
 
 peekTable :: LuaError e => Peeker e a -> Peeker e [a]
