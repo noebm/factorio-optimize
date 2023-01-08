@@ -3,7 +3,9 @@ where
 
 import Prelude hiding (product)
 import Control.Arrow (second)
-import Data.Foldable (find)
+import Data.Foldable (find, toList)
+import Data.List (intercalate)
+import Text.Printf
 
 import Data.Ratio
 
@@ -33,3 +35,7 @@ instance HasThroughput Recipe where
 findProduct :: Foldable f => Item -> f Recipe -> Maybe Recipe
 findProduct it = find (\recipe -> it `elem` fmap fst (products recipe))
 
+prettyRecipe :: Recipe -> String
+prettyRecipe recipe = printf "%s =>[%d] %s" (items (ingredients recipe)) (energy recipe) (items (toList $ products recipe))
+  where
+  items list = intercalate ", " [ printf "%s x %d" (name it) c | (it, c) <- list ]

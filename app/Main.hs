@@ -16,5 +16,5 @@ main = do
   putStrLn ""
 
   printf "Using recipes:\n"
-  mapM_ print $ factoryRecipes factory
+  mapM_ (putStrLn . prettyRecipe) $ factoryRecipes factory
 
