@@ -4,9 +4,17 @@ import Lib
 import Item
 
 import Data.Foldable
+import Text.Printf
+import Factory (factoryRecipes)
 
 main :: IO ()
 main = do
-  let Just factory = optimalFactory (Item "electronic-circuit") (toList recipes)
+  let name = "electronic-circuit"
+  let Just factory = optimalFactory (Item name) (toList recipes)
+  printf "Solution for %s:\n" name
   putStrLn $ simplFactoryShow factory
+  putStrLn ""
+
+  printf "Using recipes:\n"
+  mapM_ print $ factoryRecipes factory
 

@@ -4,7 +4,7 @@ where
 import Prelude hiding (product)
 import Data.Foldable (toList)
 import Control.Arrow (second)
-import Data.List (intercalate)
+import Data.List (intercalate, nub)
 import Data.Maybe (maybeToList)
 import Data.Map (Map , fromList)
 import qualified Data.Map as Map
@@ -22,6 +22,20 @@ data Factory = Factory
   , worker :: Recipe
   , workerCount :: Word -- output scale to make factory integral
   } deriving (Show)
+
+factoryItems :: Factory -> [ Item ]
+factoryItems = nub . go where
+
+  go :: Factory -> [ Item ]
+  go factory =
+    let items = Map.keys $ inputs factory
+    in items ++ concatMap (go .fst) (Map.elems $ inputs factory)
+
+factoryRecipes :: Factory -> [ Recipe ]
+factoryRecipes = nub . go where
+
+  go :: Factory -> [ Recipe ]
+  go factory = worker factory : concatMap (go . fst) (Map.elems $ inputs factory)
 
 scaleFactory :: Word -> Factory -> Factory
 scaleFactory s f = f { workerCount = s * workerCount f , inputs = second (s *) <$> inputs f }
