@@ -10,7 +10,7 @@ import Factory (factoryRecipes)
 main :: IO ()
 main = do
   let name = "electronic-circuit"
-  let Just factory = optimalFactory (Item name) (toList recipes)
+  let Just factory = optimalFactory (Item name) (toList recipesNoOre)
   printf "Solution for %s:\n" name
   putStrLn $ simplFactoryShow factory
   putStrLn ""

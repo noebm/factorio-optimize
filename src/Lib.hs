@@ -2,6 +2,7 @@ module Lib
   ( module Recipe
   , module Factory
   , recipes
+  , recipesNoOre
   )
 where
 
