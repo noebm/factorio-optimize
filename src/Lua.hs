@@ -60,8 +60,9 @@ recipe idx = do
         ingredients <- peekIngredients idx
         results <- choice
           [ \idx -> do
-              x <- peekFieldRaw peekString "result" idx
-              return [ (Item name , 1) ]
+              name <- peekFieldRaw peekString "result" idx
+              count <- peekFieldRaw peekIntegral "result_count" idx <|> pure 1
+              return [ (Item name , count) ]
           , peekFieldRaw (peekTable peekIngredient) "results"
           ]
           idx
