@@ -1,8 +1,6 @@
 module Recipe
 where
 
-import Prelude hiding (product)
-import Control.Arrow (second)
 import Data.Foldable (find, toList)
 import Data.List (intercalate)
 import Text.Printf
@@ -14,12 +12,11 @@ import Throughput
 
 import qualified Data.Map as Map
 import Data.List.NonEmpty (NonEmpty)
-import qualified Data.List.NonEmpty as NE
 
 data Recipe = Recipe
   { ingredients :: [ (Item , Word) ]
   , products :: NonEmpty (Item, Word)
-  , energy :: Ratio Word -- ^ 2 energy correspond to 1 second.
+  , energy :: Ratio Word
   } deriving (Eq, Show)
 
 instance HasThroughput Recipe where
