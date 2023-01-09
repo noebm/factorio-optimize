@@ -17,30 +17,28 @@ import Item
 import Throughput
 import Recipe
 
-data Factory = Factory
-  { inputs :: Map Item (Factory , Word) -- scaled factory
-  , worker :: Recipe
+data Factory a = Factory
+  { inputs :: Map Item (Factory a , Word) -- scaled factory
+  , worker :: a
   , workerCount :: Word -- output scale to make factory integral
   } deriving (Show)
 
-factoryItems :: Factory -> [ Item ]
+factoryItems :: Factory a -> [ Item ]
 factoryItems = nub . go where
 
-  go :: Factory -> [ Item ]
   go factory =
     let items = Map.keys $ inputs factory
     in items ++ concatMap (go .fst) (Map.elems $ inputs factory)
 
-factoryRecipes :: Factory -> [ Recipe ]
+factoryRecipes :: Factory Recipe -> [ Recipe ]
 factoryRecipes = nub . go where
 
-  go :: Factory -> [ Recipe ]
   go factory = worker factory : concatMap (go . fst) (Map.elems $ inputs factory)
 
-scaleFactory :: Word -> Factory -> Factory
+scaleFactory :: Word -> Factory a -> Factory a
 scaleFactory s f = f { workerCount = s * workerCount f , inputs = second (s *) <$> inputs f }
 
-instance HasThroughput Factory where
+instance HasThroughput a => HasThroughput (Factory a) where
   outputPerSecond f = scaleThroughput (fromIntegral (workerCount f)) <$> outputPerSecond (worker f)
   inputPerSecond f = collectThroughput $ do
     t <- inputPerSecond (worker f)
@@ -49,7 +47,7 @@ instance HasThroughput Factory where
       Nothing -> return $ scaleThroughput (fromIntegral (workerCount f)) t
 
 -- | Throughputs of all subfactories
-internalThroughputPerSecond :: Factory -> [ Throughput Word Second ]
+internalThroughputPerSecond :: HasThroughput a => Factory a -> [ Throughput Word Second ]
 internalThroughputPerSecond = collectThroughput . go
   where
   go f = do
@@ -60,7 +58,7 @@ internalThroughputPerSecond = collectThroughput . go
   Finds the optimal ratio producing the item given a list of 'Recipe's.
 -}
 -- XXX find shared subtrees
-optimalFactory :: Item -> [ Recipe ] -> Maybe Factory
+optimalFactory :: Item -> [ Recipe ] -> Maybe (Factory Recipe)
 optimalFactory it context = do
   outputRecipe <- findProduct it context
   let optimizedInputs = do
@@ -81,9 +79,8 @@ optimalFactory it context = do
     , workerCount = ratioToIntegral inputAdjustment
     }
 
-simplFactoryShow :: Factory -> String
+simplFactoryShow :: Factory Recipe -> String
 simplFactoryShow f = unlines (aux f) where
-  aux :: Factory -> [ String ]
   aux f' =
     [ intercalate "\n" $ (replicate 2 ' ' ++) <$> aux (scaleFactory scale f'')
     | (f'' , scale) <- toList (inputs f') ]
