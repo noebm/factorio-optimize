@@ -11,17 +11,13 @@ import qualified Data.Map as Map
 import Text.Printf
 import Factory (factoryRecipes)
 
-branchName = intercalate "," . fmap (name . fst) . toList . products
-branchNameCount (recipe, count) = printf "%s x %d" (branchName recipe) count
-
 printSolution :: String -> [ Recipe ] -> IO ()
 printSolution itemName recipes = do
   let aux = recipeLookupMap recipes
 
   let Just tree = recipeTree aux (Item itemName)
   let factory = scaleRecipeTree tree
-    -- optimalFactory (Item itemName) (toList recipesNoOre)
-  let treeString = drawTree $ fmap branchNameCount factory
+  let treeString = drawTree $ fmap recipeNameCount factory
   printf "Solution for %s:\n\n%s\n" itemName treeString
 
   printf "Using recipes:\n"

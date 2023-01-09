@@ -38,3 +38,9 @@ prettyRecipe recipe = printf "%s =>[%s] %s"
   (items (ingredients recipe)) (show $ energy recipe) (items (toList $ products recipe))
   where
   items list = intercalate ", " [ printf "%s x %d" (name it) c | (it, c) <- list ]
+
+recipeName :: Recipe -> String
+recipeName = intercalate "," . fmap (name . fst) . toList . products
+
+recipeNameCount :: (Recipe, Word) -> String
+recipeNameCount (recipe, count) = printf "%s x %d" (recipeName recipe) count
