@@ -1,17 +1,12 @@
 module Factory
 where
 
-import Prelude hiding (product)
 import Data.Foldable (toList)
-import Control.Arrow (first, second)
-import Control.Monad
-import Data.List (intercalate, nub)
-import Data.Maybe (maybeToList, fromJust, catMaybes)
-import Data.Map (Map, fromList)
+import Control.Arrow (second)
+import Data.Maybe (catMaybes)
+import Data.Map (Map)
 import qualified Data.Map as Map
-import qualified Data.List.NonEmpty as NonEmpty
 
-import Data.Ratio
 import Data.Tree
 
 import Ratio
