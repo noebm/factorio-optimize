@@ -3,13 +3,14 @@ where
 
 import Prelude hiding (product)
 import Data.Foldable (toList)
-import Control.Arrow (second)
+import Control.Arrow (first, second)
 import Control.Monad
 import Data.List (intercalate, nub)
 import Data.Maybe (maybeToList)
 import Data.Map (Map , fromList)
 import qualified Data.Map as Map
 import qualified Data.List.NonEmpty as NonEmpty
+import Data.Tree
 
 import Data.Ratio
 
@@ -19,7 +20,7 @@ import Throughput
 import Recipe
 
 data Factory a = Factory
-  { inputs :: Map Item (Factory a , Word) -- scaled factory
+  { inputs :: Map Item (Factory a)
   , worker :: a
   , workerCount :: Word -- output scale to make factory integral
   } deriving (Show)
@@ -27,22 +28,22 @@ data Factory a = Factory
 factoryItems :: Factory a -> [ Item ]
 factoryItems = nub . go where
 
-  go factory = Map.keys (inputs factory) ++ concatMap (go . fst) (Map.elems $ inputs factory)
+  go factory = Map.keys (inputs factory) ++ concatMap go (Map.elems $ inputs factory)
 
 factoryRecipes :: Factory Recipe -> [ Recipe ]
 factoryRecipes = nub . go where
 
-  go factory = worker factory : concatMap (go . fst) (Map.elems $ inputs factory)
+  go factory = worker factory : concatMap go (Map.elems $ inputs factory)
 
 scaleFactory :: Word -> Factory a -> Factory a
-scaleFactory s f = f { workerCount = s * workerCount f , inputs = second (s *) <$> inputs f }
+scaleFactory s f = f { workerCount = s * workerCount f , inputs = scaleFactory s <$> inputs f }
 
 instance HasThroughput a => HasThroughput (Factory a) where
   outputPerSecond f = scaleThroughput (fromIntegral (workerCount f)) <$> outputPerSecond (worker f)
   inputPerSecond f = collectThroughput $ do
     t <- inputPerSecond (worker f)
     case inputs f Map.!? item t of
-      Just (f' , mult) -> scaleThroughput (fromIntegral mult) <$> inputPerSecond f'
+      Just f' -> inputPerSecond f'
       Nothing -> return $ scaleThroughput (fromIntegral (workerCount f)) t
 
 -- | Throughputs of all subfactories
@@ -50,8 +51,8 @@ internalThroughputPerSecond :: HasThroughput a => Factory a -> [ Throughput Word
 internalThroughputPerSecond = collectThroughput . go
   where
   go f = do
-    (f' , k) <- toList $ inputs f
-    scaleThroughput (fromIntegral k) <$> toList (outputPerSecond f') ++ go f'
+    f' <- toList $ inputs f
+    toList (outputPerSecond f') ++ go f'
 
 {- |
   Finds the optimal ratio producing the item given a list of 'Recipe's.
@@ -76,7 +77,7 @@ optimalFactory it context = do
         (f , ips) <- optimizedInputs
         (it, ops) <- (\t -> (item t, throughput t)) <$> toList (outputPerSecond f)
         guard $ item ips == it
-        return $ (,) it (f , ratioToIntegral (throughput ips / ops * inputAdjustment))
+        return $ (,) it $ scaleFactory (ratioToIntegral $ throughput ips * inputAdjustment / ops) f
     , worker = outputRecipe
     , workerCount = ratioToIntegral inputAdjustment
     }
@@ -84,7 +85,6 @@ optimalFactory it context = do
 simplFactoryShow :: Factory Recipe -> String
 simplFactoryShow f = unlines (aux f) where
   aux f' =
-    [ intercalate "\n" $ (replicate 2 ' ' ++) <$> aux (scaleFactory scale f'')
-    | (f'' , scale) <- toList (inputs f') ]
+    [ intercalate "\n" $ (replicate 2 ' ' ++) <$> aux f'' | f'' <- toList (inputs f') ]
     ++
     [ unwords (toList (fmap (name . fst) (products (worker f')))) ++ " x " ++ show (workerCount f')]
