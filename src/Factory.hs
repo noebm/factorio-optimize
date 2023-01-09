@@ -4,6 +4,7 @@ where
 import Prelude hiding (product)
 import Data.Foldable (toList)
 import Control.Arrow (second)
+import Control.Monad
 import Data.List (intercalate, nub)
 import Data.Maybe (maybeToList)
 import Data.Map (Map , fromList)
@@ -63,16 +64,19 @@ optimalFactory it context = do
          t <- inputPerSecond outputRecipe
          -- nonexistent solution should cause failure!
          f <- maybeToList $ optimalFactory (item t) context
-         return (f , throughput t)
+         return (f, t)
   let inputAdjustment
         = foldl lcmRatio 1
-        . fmap (\(f , ips) -> lcmRatio ips (throughput $ NonEmpty.head $ outputPerSecond f) / ips)
+        . fmap (\(f , ips) -> lcmRatio (throughput ips)
+          (throughput $ head $ filter (\tp -> item tp == item ips) $ toList $ outputPerSecond f)
+          / throughput ips)
         $ optimizedInputs
   return $ Factory
     { inputs = fromList $ do
         (f , ips) <- optimizedInputs
         (it, ops) <- (\t -> (item t, throughput t)) <$> toList (outputPerSecond f)
-        return $ (,) it (f , ratioToIntegral (ips / ops * inputAdjustment))
+        guard $ item ips == it
+        return $ (,) it (f , ratioToIntegral (throughput ips / ops * inputAdjustment))
     , worker = outputRecipe
     , workerCount = ratioToIntegral inputAdjustment
     }
