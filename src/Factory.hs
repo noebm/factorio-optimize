@@ -6,92 +6,62 @@ import Data.Foldable (toList)
 import Control.Arrow (first, second)
 import Control.Monad
 import Data.List (intercalate, nub)
-import Data.Maybe (maybeToList)
-import Data.Map (Map , fromList)
+import Data.Maybe (maybeToList, fromJust, catMaybes)
+import Data.Map (Map, fromList)
 import qualified Data.Map as Map
 import qualified Data.List.NonEmpty as NonEmpty
-import Data.Tree
 
 import Data.Ratio
+import Data.Tree
 
 import Ratio
 import Item
 import Throughput
 import Recipe
 
-data Factory a = Factory
-  { inputs :: Map Item (Factory a)
-  , worker :: a
-  , workerCount :: Word -- output scale to make factory integral
-  } deriving (Show)
+type Factory = Tree (Recipe, Word)
 
-factoryItems :: Factory a -> [ Item ]
-factoryItems = nub . go where
-
-  go factory = Map.keys (inputs factory) ++ concatMap go (Map.elems $ inputs factory)
-
-factoryRecipes :: Factory Recipe -> [ Recipe ]
-factoryRecipes = nub . go where
-
-  go factory = worker factory : concatMap go (Map.elems $ inputs factory)
-
-scaleFactory :: Word -> Factory a -> Factory a
-scaleFactory s f = f { workerCount = s * workerCount f , inputs = scaleFactory s <$> inputs f }
-
-instance HasThroughput a => HasThroughput (Factory a) where
-  outputPerSecond f = scaleThroughput (fromIntegral (workerCount f)) <$> outputPerSecond (worker f)
-  inputPerSecond f = collectThroughput $ do
-    t <- inputPerSecond (worker f)
-    case inputs f Map.!? item t of
-      Just f' -> inputPerSecond f'
-      Nothing -> return $ scaleThroughput (fromIntegral (workerCount f)) t
-
--- | Throughputs of all subfactories
-internalThroughputPerSecond :: HasThroughput a => Factory a -> [ Throughput Word Second ]
-internalThroughputPerSecond = collectThroughput . go
+-- | Generates tree of recipes (as inputs for the parent recipe).
+-- Each key in the Map should be an output of the corresponding recipe.
+--
+-- Recipes with multiple outputs might require additional merging if the parent
+-- or a collection of parents use more than one output.
+recipeTree :: Map Item Recipe -> Item -> Maybe (Tree Recipe)
+recipeTree ctx it = unfoldTree go <$> ctx Map.!? it
   where
-  go f = do
-    f' <- toList $ inputs f
-    toList (outputPerSecond f') ++ go f'
+  go recipe =
+    ( recipe
+    , catMaybes [ ctx Map.!? item | (item, _) <- ingredients recipe ]
+    )
 
-{- |
-  Finds the optimal ratio producing the item given a list of 'Recipe's.
--}
--- XXX find shared subtrees
-optimalFactory :: Item -> [ Recipe ] -> Maybe (Factory Recipe)
-optimalFactory it context = do
-  outputRecipe <- findProduct it context
+scaleRecipeTree :: Tree Recipe -> Tree (Recipe, Word)
+scaleRecipeTree = foldTree go where
 
-  -- subfactory with throughput requirement
-  let optimizedInputs = do
-         t <- inputPerSecond outputRecipe
-         -- nonexistent solution should cause failure!
-         f <- maybeToList $ optimalFactory (item t) context
-         return (f, t)
+  go :: Recipe -> [ Tree (Recipe, Word) ] -> Tree (Recipe, Word)
+  go root children = Node
+    (root, ratioToIntegral scale)
+    scaledSubtree
+    where
+    childrenOutputs = do
+      subtree <- children
+      let (recipe, count) = rootLabel subtree
+      return (subtree, scaleThroughput (fromIntegral count) <$> toList (outputPerSecond recipe))
 
-  let iopairs = do
-        (f, ips) <- optimizedInputs
-        ops <- toList $ outputPerSecond f
-        guard (item ips == item ops)
-        return (f, ips, ops)
+    paired = do
+      (subtree, opsList) <- childrenOutputs
+      ips <- inputPerSecond root
+      ops <- opsList
+      guard (item ips == item ops)
+      return (subtree, (ips, ops))
 
-  let inputAdjustment = foldl lcmRatio 1 $ do
-        (f, ips, ops) <- iopairs
-        return $ lcmRatio (throughput ips) (throughput ops) / throughput ips
+    scale = foldl lcmRatio 1 $ do
+      (_, (ips, ops)) <- paired
+      return $ lcmRatio (throughput ips) (throughput ops) / throughput ips
 
-  return $ Factory
-    { inputs = fromList $ do
-        (f, ips, ops) <- iopairs
-        let f' = scaleFactory (ratioToIntegral $ throughput ips * inputAdjustment / throughput ops) f
-        return $ (,) (item ops) f'
+    scaledSubtree = do
+      (t, (ips, ops)) <- paired
+      let f count = ratioToIntegral (throughput ips / throughput ops * scale) * count
+      return $ fmap (second f) t
 
-    , worker = outputRecipe
-    , workerCount = ratioToIntegral inputAdjustment
-    }
-
-simplFactoryShow :: Factory Recipe -> String
-simplFactoryShow f = unlines (aux f) where
-  aux f' =
-    [ intercalate "\n" $ (replicate 2 ' ' ++) <$> aux f'' | f'' <- toList (inputs f') ]
-    ++
-    [ unwords (toList (fmap (name . fst) (products (worker f')))) ++ " x " ++ show (workerCount f')]
+factoryRecipes :: Factory -> [ Recipe ]
+factoryRecipes = toList . fmap fst
