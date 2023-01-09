@@ -55,7 +55,6 @@ recipe :: LuaError e => Peeker e (String , (Recipe, Bool))
 recipe idx = do
   name <- peekFieldRaw peekString "name" idx
   enabled <- peekFieldRaw peekBool "enabled" idx
-  energy <- peekFieldRaw peekIntegral "energy_required" idx <|> pure 1
   let aux idx = do
         ingredients <- peekIngredients idx
         results <- choice
@@ -66,10 +65,11 @@ recipe idx = do
           , peekFieldRaw (peekTable peekIngredient) "results"
           ]
           idx
-        return (ingredients, results)
+        energy <- peekFieldRaw peekIntegral "energy_required" idx <|> pure 1
+        return (ingredients, results, energy)
 
   -- some recipes have normal and expensive variants
-  (ingredients, results) <- aux idx <|> peekFieldRaw aux "normal" idx
+  (ingredients, results, energy) <- aux idx <|> peekFieldRaw aux "normal" idx
   return $ (,) name $ (,) Recipe
     { ingredients = ingredients
     , product = fst $ head results
