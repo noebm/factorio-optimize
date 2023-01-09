@@ -6,6 +6,7 @@ import Item
 import Data.Foldable
 import Text.Printf
 import Factory (factoryRecipes)
+import qualified Data.Map as Map
 
 printSolution :: String -> [ Recipe ] -> IO ()
 printSolution itemName recipes = do
@@ -23,3 +24,6 @@ main = do
 
   printSolution "advanced-circuit" (toList recipesNoOre)
 
+  printSolution "automation-science-pack" $ toList recipesNoOre
+
+  printSolution "logistic-science-pack" $ toList recipesNoOre
