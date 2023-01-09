@@ -48,19 +48,3 @@ convertThroughput t = t { throughput = k * throughput t }
 class HasThroughput x where
   outputPerSecond :: x -> Map Item (Throughput (Ratio Word) Second)
   inputPerSecond :: x -> Map Item (Throughput (Ratio Word) Second)
-
-findInputPerSecond :: HasThroughput x => x -> Item -> Maybe (Ratio Word)
-findInputPerSecond b i = fmap throughput $ inputPerSecond b Map.!? i
-
-findOutputPerSecond :: HasThroughput x => x -> Item -> Maybe (Ratio Word)
-findOutputPerSecond b i = fmap throughput $ outputPerSecond b Map.!? i
-
-throughputMap :: Num a => Map.Map Item (Throughput a t) -> Map.Map Item a
-throughputMap = Map.fromListWith (+) . Map.toList . fmap throughput
-
-toThroughputList :: Map.Map Item a -> Map Item (Throughput a t)
-toThroughputList = fmap Throughput
-
-collectThroughput :: Integral a => Map.Map Item (Throughput a t) -> Map.Map Item (Throughput a t)
-collectThroughput = toThroughputList . throughputMap
-
