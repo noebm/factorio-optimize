@@ -45,13 +45,11 @@ scaleRecipeTree = foldTree go where
     childrenOutputs = do
       subtree <- children
       let (recipe, count) = rootLabel subtree
-      return (subtree, scaleThroughput (fromIntegral count) <$> toList (outputPerSecond recipe))
+      return (subtree, scaleThroughput (fromIntegral count) <$> outputPerSecond recipe)
 
     paired = do
       (subtree, opsList) <- childrenOutputs
-      ips <- inputPerSecond root
-      ops <- opsList
-      guard (item ips == item ops)
+      (ips, ops) <- toList $ Map.intersectionWith (,) (inputPerSecond root) opsList
       return (subtree, (ips, ops))
 
     scale = foldl lcmRatio 1 $ do

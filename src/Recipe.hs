@@ -12,6 +12,7 @@ import Data.Ratio
 import Item
 import Throughput
 
+import qualified Data.Map as Map
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NE
 
@@ -22,12 +23,12 @@ data Recipe = Recipe
   } deriving (Eq, Show)
 
 instance HasThroughput Recipe where
-  outputPerSecond recipe = do
-    (item, count) <- products recipe
-    return $ Throughput item $ fromIntegral count / energy recipe
-  inputPerSecond recipe = do
+  outputPerSecond recipe = Map.fromList $ do
+    (item, count) <- toList $ products recipe
+    return $ (,) item $ Throughput $ fromIntegral count / energy recipe
+  inputPerSecond recipe = Map.fromList $ do
     (item, count) <- ingredients recipe
-    return $ Throughput item $ fromIntegral count / energy recipe
+    return $ (,) item $ Throughput $ fromIntegral count / energy recipe
 
 {-
   find a recipe that produces the item

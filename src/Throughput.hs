@@ -34,7 +34,7 @@ instance Time Hour where
 instance Time Day where
   timeInSeconds _ = 60 * 60 * 24
 
-data Throughput a t = Throughput { item :: Item , throughput :: Ratio a }
+newtype Throughput a t = Throughput { throughput :: Ratio a }
   deriving Show
 
 scaleThroughput :: Integral a => Ratio a -> Throughput a t -> Throughput a t
@@ -45,22 +45,21 @@ convertThroughput t = t { throughput = k * throughput t }
   where k = timeInSeconds (Proxy :: Proxy t1) / timeInSeconds (Proxy :: Proxy t2)
 
 class HasThroughput x where
-  outputPerSecond :: x -> NonEmpty (Throughput Word Second)
-  inputPerSecond :: x -> [ Throughput Word Second ]
+  outputPerSecond :: x -> Map Item (Throughput Word Second)
+  inputPerSecond :: x -> Map Item (Throughput Word Second)
 
 findInputPerSecond :: HasThroughput x => x -> Item -> Maybe (Ratio Word)
-findInputPerSecond b i = fmap throughput $ find ((== i) . item) $ inputPerSecond b
+findInputPerSecond b i = fmap throughput $ inputPerSecond b Map.!? i
 
 findOutputPerSecond :: HasThroughput x => x -> Item -> Maybe (Ratio Word)
-findOutputPerSecond b i = fmap throughput $ find ((== i) . item) $ outputPerSecond b
+findOutputPerSecond b i = fmap throughput $ outputPerSecond b Map.!? i
 
-throughputMap ::Integral a => [ Throughput a t ] -> Map.Map Item (Ratio a)
-throughputMap = Map.fromListWith (+) . fmap aux
-  where aux (Throughput i k) = (i , k)
+throughputMap ::Integral a => Map.Map Item (Throughput a t) -> Map.Map Item (Ratio a)
+throughputMap = Map.fromListWith (+) . Map.toList . fmap throughput
 
-toThroughputList :: Map.Map Item (Ratio a) -> [ Throughput a t ]
-toThroughputList = fmap (uncurry Throughput) . Map.toList
+toThroughputList :: Map.Map Item (Ratio a) -> Map Item (Throughput a t)
+toThroughputList = fmap Throughput
 
-collectThroughput :: Integral a => [ Throughput a t ] -> [ Throughput a t ]
+collectThroughput :: Integral a => Map.Map Item (Throughput a t) -> Map.Map Item (Throughput a t)
 collectThroughput = toThroughputList . throughputMap
 
