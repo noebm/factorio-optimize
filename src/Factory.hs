@@ -61,22 +61,27 @@ internalThroughputPerSecond = collectThroughput . go
 optimalFactory :: Item -> [ Recipe ] -> Maybe (Factory Recipe)
 optimalFactory it context = do
   outputRecipe <- findProduct it context
+
+  -- subfactory with throughput requirement
   let optimizedInputs = do
          t <- inputPerSecond outputRecipe
          -- nonexistent solution should cause failure!
          f <- maybeToList $ optimalFactory (item t) context
          return (f, t)
-  let inputAdjustment = foldl lcmRatio 1 $ do
-        (f , ips) <- optimizedInputs
+
+  let iopairs = do
+        (f, ips) <- optimizedInputs
         ops <- toList $ outputPerSecond f
         guard (item ips == item ops)
+        return (f, ips, ops)
+
+  let inputAdjustment = foldl lcmRatio 1 $ do
+        (f, ips, ops) <- iopairs
         return $ lcmRatio (throughput ips) (throughput ops) / throughput ips
 
   return $ Factory
     { inputs = fromList $ do
-        (f , ips) <- optimizedInputs
-        ops <- toList $ outputPerSecond f
-        guard $ item ips == item ops
+        (f, ips, ops) <- iopairs
         let f' = scaleFactory (ratioToIntegral $ throughput ips * inputAdjustment / throughput ops) f
         return $ (,) (item ops) f'
 
