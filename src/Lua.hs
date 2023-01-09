@@ -62,15 +62,11 @@ recipe idx = do
           ]
           idx
         energy <- (`approxRational` 0.01) <$> peekFieldRaw peekRealFloat "energy_required" idx <|> pure 0.5
-        return (ingredients, results, energy)
+        return $ Recipe ingredients (NonEmpty.fromList results) (fromRational energy)
 
   -- some recipes have normal and expensive variants
-  (ingredients, results, energy) <- aux idx <|> peekFieldRaw aux "normal" idx
-  return $ (,) name $ (,) Recipe
-    { ingredients = ingredients
-    , products = NonEmpty.fromList results
-    , energy = fromRational energy
-    } enabled
+  recipe <- aux idx <|> peekFieldRaw aux "normal" idx
+  return (name , (recipe, enabled))
 
 peekRecipes :: LuaError e => Peek e (Map String (Recipe, Bool))
 peekRecipes = do
