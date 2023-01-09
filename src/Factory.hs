@@ -26,9 +26,7 @@ data Factory a = Factory
 factoryItems :: Factory a -> [ Item ]
 factoryItems = nub . go where
 
-  go factory =
-    let items = Map.keys $ inputs factory
-    in items ++ concatMap (go .fst) (Map.elems $ inputs factory)
+  go factory = Map.keys (inputs factory) ++ concatMap (go . fst) (Map.elems $ inputs factory)
 
 factoryRecipes :: Factory Recipe -> [ Recipe ]
 factoryRecipes = nub . go where
