@@ -9,14 +9,13 @@ import Data.List (intercalate)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Text.Printf
-import Factory (factoryRecipes)
+import Factory (factoryRecipes, solveRecipe)
 
 printSolution :: String -> [ Recipe ] -> IO ()
 printSolution itemName recipes = do
   let aux = recipeLookupMap recipes
 
-  let Just tree = recipeTree aux (Item itemName)
-  let factory = scaleRecipeTree tree
+  let Just factory = solveRecipe aux (Item itemName)
   let treeString = drawTree $ fmap recipeNameCount factory
   printf "Solution for %s:\n\n%s\n" itemName treeString
 
@@ -39,3 +38,5 @@ main = do
   printSolution "automation-science-pack" $ toList recipesNoOre
 
   printSolution "logistic-science-pack" $ toList recipesNoOre
+
+  printSolution "processing-unit" $ toList recipesNoOre

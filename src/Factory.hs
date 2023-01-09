@@ -29,13 +29,12 @@ recipeTree ctx it = unfoldTree go <$> ctx Map.!? it
     , catMaybes [ ctx Map.!? item | (item, _) <- ingredients recipe ]
     )
 
+-- | Correctly scales tree to fix ratios of intermediate steps.
 scaleRecipeTree :: Tree Recipe -> Tree (Recipe, Word)
 scaleRecipeTree = foldTree go where
 
   go :: Recipe -> [ Tree (Recipe, Word) ] -> Tree (Recipe, Word)
-  go root children = Node
-    (root, ratioToIntegral scale)
-    scaledSubtree
+  go root children = Node (root, ratioToIntegral scale) scaledSubtree
     where
     childrenOutputs = do
       subtree <- children
@@ -55,6 +54,9 @@ scaleRecipeTree = foldTree go where
       (t, (ips, ops)) <- paired
       let f count = ratioToIntegral (throughput ips / throughput ops * scale) * count
       return $ fmap (second f) t
+
+solveRecipe :: Map Item Recipe -> Item -> Maybe (Tree (Recipe, Word))
+solveRecipe ctx = fmap scaleRecipeTree . recipeTree ctx
 
 factoryRecipes :: Factory -> [ Recipe ]
 factoryRecipes = toList . fmap fst
