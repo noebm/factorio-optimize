@@ -61,7 +61,7 @@ recipe idx = do
           , peekFieldRaw (peekTable peekIngredient) "results"
           ]
           idx
-        energy <- (`approxRational` 0.01) <$> peekFieldRaw peekRealFloat "energy_required" idx <|> pure 1
+        energy <- (`approxRational` 0.01) <$> peekFieldRaw peekRealFloat "energy_required" idx <|> pure 0.5
         return (ingredients, results, energy)
 
   -- some recipes have normal and expensive variants
