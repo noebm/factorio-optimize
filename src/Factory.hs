@@ -66,18 +66,20 @@ optimalFactory it context = do
          -- nonexistent solution should cause failure!
          f <- maybeToList $ optimalFactory (item t) context
          return (f, t)
-  let inputAdjustment
-        = foldl lcmRatio 1
-        . fmap (\(f , ips) -> lcmRatio (throughput ips)
-          (throughput $ head $ filter (\tp -> item tp == item ips) $ toList $ outputPerSecond f)
-          / throughput ips)
-        $ optimizedInputs
+  let inputAdjustment = foldl lcmRatio 1 $ do
+        (f , ips) <- optimizedInputs
+        ops <- toList $ outputPerSecond f
+        guard (item ips == item ops)
+        return $ lcmRatio (throughput ips) (throughput ops) / throughput ips
+
   return $ Factory
     { inputs = fromList $ do
         (f , ips) <- optimizedInputs
-        (it, ops) <- (\t -> (item t, throughput t)) <$> toList (outputPerSecond f)
-        guard $ item ips == it
-        return $ (,) it $ scaleFactory (ratioToIntegral $ throughput ips * inputAdjustment / ops) f
+        ops <- toList $ outputPerSecond f
+        guard $ item ips == item ops
+        let f' = scaleFactory (ratioToIntegral $ throughput ips * inputAdjustment / throughput ops) f
+        return $ (,) (item ops) f'
+
     , worker = outputRecipe
     , workerCount = ratioToIntegral inputAdjustment
     }
