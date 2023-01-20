@@ -34,26 +34,23 @@ scaleRecipeTree :: Tree Recipe -> Tree (Recipe, Word)
 scaleRecipeTree = foldTree go where
 
   go :: Recipe -> [ Tree (Recipe, Word) ] -> Tree (Recipe, Word)
-  go root children = Node (root, ratioToIntegral scale) scaledSubtree
+  go root children = Node (root, ratioToIntegral levelCoeff) scaledForest
     where
-    childrenOutputs = do
-      subtree <- children
-      let (recipe, count) = rootLabel subtree
-      return (subtree, scaleThroughput (fromIntegral count) <$> outputPerSecond recipe)
+    recipeThroughputs (recipe, count) = scaleThroughput (fromIntegral count) <$> outputPerSecond recipe
 
-    paired = do
-      (subtree, opsList) <- childrenOutputs
-      (ips, ops) <- toList $ Map.intersectionWith (,) (inputPerSecond root) opsList
-      return (subtree, (ips, ops))
+    inputOutputPairs = toList . Map.intersectionWith (,) (inputPerSecond root)
 
-    scale = foldl lcmRatio 1 $ do
-      (_, (ips, ops)) <- paired
+    aux = inputOutputPairs . recipeThroughputs . rootLabel
+
+    levelCoeff = foldl lcmRatio 1 $ do
+      (ips, ops) <- aux =<< children
       return $ lcmRatio (throughput ips) (throughput ops) / throughput ips
 
-    scaledSubtree = do
-      (t, (ips, ops)) <- paired
-      let f count = ratioToIntegral (throughput ips / throughput ops * scale) * count
-      return $ fmap (second f) t
+    scaledForest = do
+      t <- children
+      (ips, ops) <- aux t
+      let coeff = ratioToIntegral (throughput ips / throughput ops * levelCoeff)
+      return $ fmap (second (coeff *)) t
 
 solveRecipe :: Map Item Recipe -> Item -> Maybe (Tree (Recipe, Word))
 solveRecipe ctx = fmap scaleRecipeTree . recipeTree ctx
