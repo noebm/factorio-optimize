@@ -8,6 +8,7 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 
 import Data.Tree
+import Data.Ratio
 
 import Ratio
 import Item
@@ -30,13 +31,13 @@ recipeTree ctx it = unfoldTree go <$> ctx Map.!? it
     )
 
 -- | Correctly scales tree to fix ratios of intermediate steps.
-scaleRecipeTree :: Tree Recipe -> Tree (Recipe, Word)
+scaleRecipeTree :: Tree Recipe -> Tree (Recipe, Ratio Word)
 scaleRecipeTree = foldTree go where
 
-  go :: Recipe -> [ Tree (Recipe, Word) ] -> Tree (Recipe, Word)
-  go root children = Node (root, ratioToIntegral levelCoeff) scaledForest
+  go :: Recipe -> [ Tree (Recipe, Ratio Word) ] -> Tree (Recipe, Ratio Word)
+  go root children = Node (root, levelCoeff) scaledForest
     where
-    recipeThroughputs (recipe, count) = scaleThroughput (fromIntegral count) <$> outputPerSecond recipe
+    recipeThroughputs (recipe, count) = scaleThroughput count <$> outputPerSecond recipe
 
     inputOutputPairs = toList . Map.intersectionWith (,) (inputPerSecond root)
 
@@ -49,11 +50,12 @@ scaleRecipeTree = foldTree go where
     scaledForest = do
       t <- children
       (ips, ops) <- aux t
-      let coeff = ratioToIntegral (throughput ips / throughput ops * levelCoeff)
+      let coeff = throughput ips / throughput ops * levelCoeff
       return $ fmap (second (coeff *)) t
 
 solveRecipe :: Map Item Recipe -> Item -> Maybe (Tree (Recipe, Word))
-solveRecipe ctx = fmap scaleRecipeTree . recipeTree ctx
+solveRecipe ctx = fmap (integralCoefficients . scaleRecipeTree) . recipeTree ctx
+  where integralCoefficients = fmap (second ratioToIntegral)
 
 factoryRecipes :: Factory -> [ Recipe ]
 factoryRecipes = toList . fmap fst
