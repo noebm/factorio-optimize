@@ -15,8 +15,6 @@ import Item
 import Throughput
 import Recipe
 
-type Factory = Tree (Recipe, Word)
-
 -- | Generates tree of recipes (as inputs for the parent recipe).
 -- Each key in the Map should be an output of the corresponding recipe.
 --
