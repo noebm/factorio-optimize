@@ -1,4 +1,4 @@
-module Objects where
+module Recipes where
 
 import System.IO.Unsafe
 import Data.Map (Map)

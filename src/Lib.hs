@@ -1,10 +1,10 @@
 module Lib
   ( module Recipe
   , module Factory
-  , module Objects
+  , module Recipes
   )
 where
 
 import Recipe
 import Factory
-import Objects
+import Recipes
