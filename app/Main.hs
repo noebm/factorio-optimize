@@ -3,7 +3,6 @@ module Main where
 import Lib
 import Item
 
-import Data.Foldable
 import Data.Tree
 import Data.List (intercalate)
 import Data.Map (Map)
@@ -25,12 +24,6 @@ printSolution itemName recipes = do
   let ctx = recipeLookupMap recipes
   let Just factory = solveRecipe ctx (Item itemName)
   putStrLn $ solutionString itemName factory
-
-recipeLookupMap :: Map String Recipe -> Map Item NamedRecipe
-recipeLookupMap recipes = Map.fromList $ do
-  (name, recipe) <- reverse $ Map.assocs recipes
-  (item, _count) <- toList $ products recipe
-  return (item, (name, recipe))
 
 main :: IO ()
 main = do
