@@ -11,7 +11,7 @@ import qualified Data.Map as Map
 import Text.Printf
 import Factory (factoryRecipes, solveRecipe)
 
-printSolution :: String -> [ Recipe ] -> IO ()
+printSolution :: String -> Map String Recipe -> IO ()
 printSolution itemName recipes = do
   let aux = recipeLookupMap recipes
 
@@ -23,20 +23,20 @@ printSolution itemName recipes = do
   mapM_ (putStrLn . prettyRecipe) $ factoryRecipes factory
   putStrLn ""
 
-recipeLookupMap :: [ Recipe ] -> Map Item Recipe
+recipeLookupMap :: Map String Recipe -> Map Item Recipe
 recipeLookupMap recipes = Map.fromList $ do
-  recipe <- reverse recipes
+  (name, recipe) <- reverse $ Map.assocs recipes
   (item, _count) <- toList $ products recipe
   return (item, recipe)
 
 main :: IO ()
 main = do
-  printSolution "electronic-circuit" (toList recipesNoOre)
+  printSolution "electronic-circuit" recipesNoOre
 
-  printSolution "advanced-circuit" (toList recipesNoOre)
+  printSolution "advanced-circuit" recipesNoOre
 
-  printSolution "automation-science-pack" $ toList recipesNoOre
+  printSolution "automation-science-pack" recipesNoOre
 
-  printSolution "logistic-science-pack" $ toList recipesNoOre
+  printSolution "logistic-science-pack" recipesNoOre
 
-  printSolution "processing-unit" $ toList recipesNoOre
+  printSolution "processing-unit" recipesNoOre
