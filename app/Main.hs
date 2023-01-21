@@ -11,22 +11,22 @@ import qualified Data.Map as Map
 import Text.Printf
 import Factory (factoryRecipes, solveRecipe)
 
-solutionString :: String -> Factory -> String
+solutionString :: String -> Tree (NamedRecipe, Word) -> String
 solutionString itemName factory = unlines $
     [ printf "Solution for %s:" itemName
     , ""
-    , drawTree $ fmap recipeNameCount factory
+    , drawTree $ fmap namedRecipeCountString factory
     , "Using recipes:"
     ]
-    ++ (prettyRecipe <$> factoryRecipes factory)
+    ++ (prettyNamedRecipe <$> factoryRecipes factory)
 
 printSolution :: String -> Map String Recipe -> IO ()
 printSolution itemName recipes = do
-  let ctx = snd <$> recipeLookupMap recipes
+  let ctx = recipeLookupMap recipes
   let Just factory = solveRecipe ctx (Item itemName)
   putStrLn $ solutionString itemName factory
 
-recipeLookupMap :: Map String Recipe -> Map Item (String, Recipe)
+recipeLookupMap :: Map String Recipe -> Map Item NamedRecipe
 recipeLookupMap recipes = Map.fromList $ do
   (name, recipe) <- reverse $ Map.assocs recipes
   (item, _count) <- toList $ products recipe

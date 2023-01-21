@@ -27,6 +27,8 @@ instance HasThroughput Recipe where
     (item, count) <- ingredients recipe
     return $ (,) item $ Throughput $ fromIntegral count / energy recipe
 
+type NamedRecipe = (String, Recipe)
+
 {-
   find a recipe that produces the item
 -}
@@ -39,8 +41,8 @@ prettyRecipe recipe = printf "%s =>[%s] %s"
   where
   items list = intercalate ", " [ printf "%s x %d" (name it) c | (it, c) <- list ]
 
-recipeName :: Recipe -> String
-recipeName = intercalate "," . fmap (name . fst) . toList . products
+prettyNamedRecipe :: NamedRecipe -> String
+prettyNamedRecipe (name, recipe) = printf "%s: %s" name $ prettyRecipe recipe
 
-recipeNameCount :: (Recipe, Word) -> String
-recipeNameCount (recipe, count) = printf "%s x %d" (recipeName recipe) count
+namedRecipeCountString :: (NamedRecipe, Word) -> String
+namedRecipeCountString ((name, recipe), count) = printf "%s x %d" name count

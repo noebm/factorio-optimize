@@ -22,24 +22,25 @@ type Factory = Tree (Recipe, Word)
 --
 -- Recipes with multiple outputs might require additional merging if the parent
 -- or a collection of parents use more than one output.
-recipeTree :: Map Item Recipe -> Item -> Maybe (Tree Recipe)
+recipeTree :: Map Item NamedRecipe -> Item -> Maybe (Tree NamedRecipe)
 recipeTree ctx it = unfoldTree go <$> ctx Map.!? it
   where
-  go recipe =
-    ( recipe
+  go (name, recipe) =
+    ( (name, recipe)
     , catMaybes [ ctx Map.!? item | (item, _) <- ingredients recipe ]
     )
 
 -- | Correctly scales tree to fix ratios of intermediate steps.
-scaleRecipeTree :: Tree Recipe -> Tree (Recipe, Ratio Word)
+scaleRecipeTree :: Tree NamedRecipe -> Tree (NamedRecipe, Ratio Word)
 scaleRecipeTree = foldTree go where
 
-  go :: Recipe -> [ Tree (Recipe, Ratio Word) ] -> Tree (Recipe, Ratio Word)
+  go :: NamedRecipe -> [ Tree (NamedRecipe, Ratio Word) ] -> Tree (NamedRecipe, Ratio Word)
   go root children = Node (root, levelCoeff) scaledForest
     where
-    recipeThroughputs (recipe, count) = scaleThroughput count <$> outputPerSecond recipe
+    rootRecipe = snd root
+    recipeThroughputs ((_ , recipe), count) = scaleThroughput count <$> outputPerSecond recipe
 
-    inputOutputPairs = toList . Map.intersectionWith (,) (inputPerSecond root)
+    inputOutputPairs = toList . Map.intersectionWith (,) (inputPerSecond rootRecipe)
 
     aux = inputOutputPairs . recipeThroughputs . rootLabel
 
@@ -53,9 +54,9 @@ scaleRecipeTree = foldTree go where
       let coeff = throughput ips / throughput ops * levelCoeff
       return $ fmap (second (coeff *)) t
 
-solveRecipe :: Map Item Recipe -> Item -> Maybe (Tree (Recipe, Word))
+solveRecipe :: Map Item NamedRecipe -> Item -> Maybe (Tree (NamedRecipe, Word))
 solveRecipe ctx = fmap (integralCoefficients . scaleRecipeTree) . recipeTree ctx
   where integralCoefficients = fmap (second ratioToIntegral)
 
-factoryRecipes :: Factory -> [ Recipe ]
+factoryRecipes :: Tree (a, b) -> [a]
 factoryRecipes = toList . fmap fst
