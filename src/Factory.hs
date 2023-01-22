@@ -21,11 +21,14 @@ import Recipe
 -- Recipes with multiple outputs might require additional merging if the parent
 -- or a collection of parents use more than one output.
 recipeTree :: Map Item NamedRecipe -> Item -> Maybe (Tree NamedRecipe)
-recipeTree ctx it = unfoldTree go <$> ctx Map.!? it
+recipeTree ctx it = unfoldTree go <$> aux it ctx
   where
-  go (name, recipe) =
+  aux it ctx = (\(val,ctx') -> (,) ctx' <$> val) $ Map.updateLookupWithKey (\_ _ -> Nothing) it ctx
+
+  go :: (Map Item NamedRecipe, NamedRecipe) -> (NamedRecipe, [(Map Item NamedRecipe, NamedRecipe)])
+  go (ctx, (name, recipe)) =
     ( (name, recipe)
-    , catMaybes [ ctx Map.!? item | (item, _) <- ingredients recipe ]
+    , catMaybes [ aux item ctx | (item, _) <- ingredients recipe ]
     )
 
 -- | Correctly scales tree to fix ratios of intermediate steps.
