@@ -45,7 +45,7 @@ scaleRecipeTree = foldTree go where
 
     aux = inputOutputPairs . recipeThroughputs . rootLabel
 
-    levelCoeff = foldl lcmRatio 1 $ do
+    levelCoeff = minimalDivisibleBy $ do
       (ips, ops) <- aux =<< children
       return $ lcmRatio (throughput ips) (throughput ops) / throughput ips
 

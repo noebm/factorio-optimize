@@ -2,6 +2,7 @@ module Ratio
   ( lcmRatio
   , gcdRatio
   , ratioToIntegral
+  , minimalDivisibleBy
   )
 where
 
@@ -16,3 +17,6 @@ gcdRatio x y = (gcd `on` numerator) x y % (lcm `on` denominator) x y
 
 ratioToIntegral :: Integral a => Ratio a -> a
 ratioToIntegral x = numerator x * denominator x
+
+minimalDivisibleBy :: Integral a => [Ratio a] -> Ratio a
+minimalDivisibleBy = foldl lcmRatio 1
