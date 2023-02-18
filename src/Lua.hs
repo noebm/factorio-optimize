@@ -8,8 +8,6 @@ import Control.Monad
 import Control.Applicative
 import Data.Foldable
 import Data.Ratio
-import Data.Map (Map)
-import qualified Data.Map as Map
 import qualified Data.List.NonEmpty as NonEmpty
 
 
@@ -68,14 +66,14 @@ recipe idx = do
   recipe <- aux idx <|> peekFieldRaw aux "normal" idx
   return (name , (recipe, enabled))
 
-peekRecipes :: LuaError e => Peek e (Map String (Recipe, Bool))
-peekRecipes = do
+peekRecipeList :: LuaError e => Peek e [(String, (Recipe, Bool))]
+peekRecipeList = do
   liftLua $ getglobal "data"
   let aux = peekFieldRaw (peekTable recipe) "recipe"
-  peekFieldRaw (fmap Map.fromList . aux) "raw" top
+  peekFieldRaw aux "raw" top
 
-loadLua :: IO (Map String (Recipe, Bool))
-loadLua = run @HsLua.Exception $ do
+luaRecipeList :: IO [(String, (Recipe, Bool))]
+luaRecipeList = run @HsLua.Exception $ do
   openlibs
 
   let libs =
@@ -84,4 +82,4 @@ loadLua = run @HsLua.Exception $ do
         , "./factorio-data/base/prototypes/recipe.lua"
         ]
   loadLibs libs
-  forcePeek peekRecipes
+  forcePeek peekRecipeList

@@ -1,5 +1,5 @@
-module Recipe
-where
+{-# LANGUAGE DeriveLift #-}
+module Recipe where
 
 import Data.Foldable (find, toList)
 import Data.List (intercalate)
@@ -12,12 +12,13 @@ import Throughput
 
 import qualified Data.Map as Map
 import Data.List.NonEmpty (NonEmpty)
+import Language.Haskell.TH.Syntax (Lift)
 
 data Recipe = Recipe
   { ingredients :: [ (Item , Word) ]
   , products :: NonEmpty (Item, Word)
   , energy :: Ratio Word
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Lift)
 
 instance HasThroughput Recipe where
   outputPerSecond recipe = Map.fromList $ do
