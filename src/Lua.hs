@@ -16,7 +16,7 @@ import Item
 
 loadLibs :: LuaError e => [ FilePath ] -> LuaE e ()
 loadLibs paths = for_ paths $ \path -> do
-  status <- loadfile path
+  status <- loadfile $ Just path
   call 0 0
 
 peekTable :: LuaError e => Peeker e a -> Peeker e [a]
