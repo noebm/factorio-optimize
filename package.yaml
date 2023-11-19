@@ -1,10 +1,9 @@
-name:                optimize-factory
+name:                factorio-optimize
 version:             0.1.0.0
-github:              "githubuser/optimize-factory"
-license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2019 Author name here"
+github:              "noebm/factorio-optimize"
+author:              "Moritz Noebauer"
+maintainer:          "moritz.noebauer@gmail.com"
+copyright:           "2019 Moritz Noebauer"
 
 extra-source-files:
 - README.md
@@ -17,7 +16,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/githubuser/optimize-factory#readme>
+description:         Please see the README on GitHub at <https://github.com/noebm/factorio-optimize#readme>
 
 dependencies:
 - base >= 4.7 && < 5
@@ -29,7 +28,7 @@ library:
   source-dirs: src
 
 executables:
-  optimize-factory-exe:
+  factorio-optimize-exe:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -37,10 +36,10 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - optimize-factory
+    - factorio-optimize
 
 # tests:
-#   optimize-factory-test:
+#   factorio-optimize-test:
 #     main:                Spec.hs
 #     source-dirs:         test
 #     ghc-options:
@@ -48,4 +47,4 @@ executables:
 #     - -rtsopts
 #     - -with-rtsopts=-N
 #     dependencies:
-#     - optimize-factory
+#     - factorio-optimize
